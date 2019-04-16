@@ -2,6 +2,3 @@
 set -e
 
 cd $(dirname $0)/..
-
-./scripts/layout
-./scripts/package

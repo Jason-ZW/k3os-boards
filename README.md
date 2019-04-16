@@ -1,12 +1,12 @@
-# The Raspberry Pi Image for K3OS
+# K3OS Images for Arm Development Boards
 
-This repo can build the Raspberry Pi Image for K3OS.
+This repo can build the Images running on some Arm Development Boards.
 
 ## Building
 
-You need Docker on your host, and run:
+You need Docker on your host. If you want to build RPi3 image, you can run:
 
-    make
+    make rpi3
 
 ## Contact
 

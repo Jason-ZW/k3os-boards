@@ -1,4 +1,4 @@
-TARGETS := $(shell ls scripts | grep -vE 'clean|run|help|config')
+TARGETS := $(shell ls scripts | grep -vE 'clean|help')
 
 .dapper:
 	@echo Downloading dapper
@@ -9,9 +9,6 @@ TARGETS := $(shell ls scripts | grep -vE 'clean|run|help|config')
 
 $(TARGETS): .dapper
 	./.dapper $@ 2>&1 | tee $@.log
-
-config: .dapper
-	./.dapper config
 
 shell-bind: .dapper
 	./.dapper -m bind -s
