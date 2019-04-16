@@ -1,0 +1,7 @@
+
+//setenv kernel_addr_r 0x01000000
+//setenv ramdisk_addr_r 0x02100000
+fatload mmc 0:1 ${kernel_addr_r} boot/vmlinuz
+fatload mmc 0:1 ${ramdisk_addr_r} boot/initrd
+setenv initrdsize $filesize
+booti ${kernel_addr_r} ${ramdisk_addr_r}:${initrdsize} ${fdt_addr_r}

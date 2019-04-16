@@ -3,11 +3,16 @@ FROM ubuntu:bionic
 
 RUN apt-get update && \
     apt-get install -y \
+        build-essential \
+        u-boot-tools \
+        bison \
+        flex \
         wget \
         bc \
         curl \
         vim \
         locales \
+        tree \
         git \
     && rm /bin/sh && ln -s /bin/bash /bin/sh
 
@@ -21,14 +26,22 @@ WORKDIR ${DAPPER_SOURCE}
 ARG DAPPER_HOST_ARCH
 ENV ARCH $DAPPER_HOST_ARCH
 
+ARG UBOOT_VERSION=2019.04
+ARG UBOOT_URL=http://ftp.denx.de/pub/u-boot/u-boot-${UBOOT_VERSION}.tar.bz2
+
 ARG INITRD_VERSION=latest
 ARG INITRD_URL=https://releases.rancher.com/k3os/${INITRD_VERSION}/arm64/initrd_arm64
 
 ARG KERNEL_VERSION=latest
 ARG KERNEL_URL=https://releases.rancher.com/k3os/${INITRD_VERSION}/arm64/vmlinuz_arm64
 
+ARG RPI_FIRMWARE_VERSION=1.20190401
+ARG RPI_FIRMWARE_URL=https://github.com/raspberrypi/firmware/archive/${RPI_FIRMWARE_VERSION}.tar.gz
+
 ENV KERNEL_URL=${KERNEL_URL} \
     INITRD_URL=${INITRD_URL} \
+    UBOOT_URL=${UBOOT_URL} \
+    RPI_FIRMWARE_URL=${RPI_FIRMWARE_URL} \
     DOWNLOADS=/usr/src/downloads
 
 ENTRYPOINT ["./scripts/entry"]
