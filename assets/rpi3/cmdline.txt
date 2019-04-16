@@ -1,1 +1,1 @@
-+dwc_otg.lpm_enable=0 cgroup-enable=memory swapaccount=1 elevator=deadline rootwait console=ttyAMA0,115200 console=tty1
++dwc_otg.lpm_enable=0 cgroup-enable=memory swapaccount=1 elevator=deadline root=/dev/mmcblk0p2 rootfstype=ext4 rootwait console=ttyAMA0,115200 console=tty0

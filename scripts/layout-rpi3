@@ -1,9 +1,7 @@
 #!/bin/bash
 
-ARTIFACTS=$(pwd)/dist/artifacts
 BUILD=build
 BUILD_IMAGE_DIR=${BUILD}/image
-export ARTIFACTS BUILD BUILD_IMAGE_DIR
 
 mkdir -p  ${BUILD_IMAGE_DIR} ${ARTIFACTS} ${DOWNLOADS}
 
@@ -14,8 +12,11 @@ tar -C ${BUILD} -xf ${DOWNLOADS}/u-boot.tar.bz2
 echo "Downloading initrd"
 curl -fL ${INITRD_URL} -o ${DOWNLOADS}/initrd
 
-echo "Downloading vmlinuz"
-curl -fL ${INITRD_URL} -o ${DOWNLOADS}/vmlinuz
+echo "Downloading kernel vmlinuz"
+curl -fL ${KERNEL_URL} -o ${DOWNLOADS}/vmlinuz.gz
+pushd ${DOWNLOADS}
+gunzip vmlinuz.gz
+popd
 
 echo "Downloading RPi firmware"
 curl -fL ${RPI_FIRMWARE_URL} -o ${DOWNLOADS}/rpi_firmware.tar.gz
@@ -30,15 +31,18 @@ popd
 
 # construct the image
 mkdir -p ${BUILD_IMAGE_DIR}/boot
-mkimage -A arm64 -O linux -T script -d assets/rpi3/bootscript.txt ${BUILD_IMAGE_DIR}/boot/boot.scr
-cp -v ${BUILD}/u-boot-*/u-boot.bin ${BUILD_IMAGE_DIR}/boot/
-cp -v ${DOWNLOADS}/initrd ${BUILD_IMAGE_DIR}/boot/
-cp -v ${DOWNLOADS}/vmlinuz ${BUILD_IMAGE_DIR}/boot/
+mkimage -A arm64 -O linux -T script -d assets/rpi3/bootscript.txt ${BUILD_IMAGE_DIR}/boot.scr
+cp -v ${BUILD}/u-boot-*/u-boot.bin ${BUILD_IMAGE_DIR}/
+cp -v ${DOWNLOADS}/initrd ${BUILD_IMAGE_DIR}/
+cp -v ${DOWNLOADS}/vmlinuz ${BUILD_IMAGE_DIR}/
 
 cp -v ${BUILD}/firmware-*/boot/{bootcode.bin,fixup*.dat,start*.elf} ${BUILD_IMAGE_DIR}/
-cp -v ${BUILD}/firmware-*/boot/bcm2710-rpi-3-b-plus.dtb ${BUILD_IMAGE_DIR}/
-cp -v ${BUILD}/firmware-*/boot/bcm2710-rpi-3-b.dtb ${BUILD_IMAGE_DIR}/
+cp -v ${BUILD}/firmware-*/boot/bcm*-rpi-3-b-plus.dtb ${BUILD_IMAGE_DIR}/
+cp -v ${BUILD}/firmware-*/boot/bcm*-rpi-3-b.dtb ${BUILD_IMAGE_DIR}/
+
 mkdir -p ${BUILD_IMAGE_DIR}/boot/overlays/
-cp -v ${BUILD}/firmware-*/overlays/*.dtbo ${BUILD_IMAGE_DIR}/boot/overlays/
+cp -v ${BUILD}/firmware-*/boot/overlays/*.dtbo ${BUILD_IMAGE_DIR}/overlays/
+
+cp -v assets/rpi3/{cmdline.txt,config.txt} ${BUILD_IMAGE_DIR}/
 
 tree ${BUILD_IMAGE_DIR} -a -L 3
