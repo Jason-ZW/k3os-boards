@@ -1,0 +1,15 @@
+#!/bin/bash
+
+ARTIFACTS=$(pwd)/dist/artifacts
+BUILD=build
+BOOTLOADER_DIR=${BUILD}/bootloader
+export ARTIFACTS BUILD KERNEL_DIR BOOTLOADER_DIR
+
+mkdir -p ${BUILD} ${ARTIFACTS} ${DOWNLOADS}
+
+echo "Downloading initrd"
+curl -fL ${INITRD_URL} -o ${DOWNLOADS}/initrd
+
+echo "Downloading vmlinuz"
+curl -fL ${INITRD_URL} -o ${DOWNLOADS}/vmlinuz
+
