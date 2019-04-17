@@ -23,6 +23,14 @@ curl -fL ${RPI_FIRMWARE_URL} -o ${DOWNLOADS}/rpi_firmware.tar.gz
 tar -C ${BUILD} -xf ${DOWNLOADS}/rpi_firmware.tar.gz
 
 
+echo "Rebuilding initrd"
+mkdir -p  ${BUILD}/initrd
+pushd ${BUILD}/initrd
+zcat ${DOWNLOADS}/initrd | cpio -idm
+mv *.squashfs ../image/
+find | cpio -H newc -o | gzip -9 > ../image/initrd
+popd
+
 # build u-boot
 pushd ${BUILD}/u-boot-*
 CROSS_COMPILE=aarch64-linux-gnu- make rpi_3_defconfig
@@ -32,7 +40,6 @@ popd
 # construct the image
 mkimage -A arm64 -O linux -T script -d assets/rpi3/bootscript.txt ${BUILD_IMAGE_DIR}/boot.scr
 cp -v ${BUILD}/u-boot-*/u-boot.bin ${BUILD_IMAGE_DIR}/
-cp -v ${DOWNLOADS}/initrd ${BUILD_IMAGE_DIR}/
 cp -v ${DOWNLOADS}/vmlinuz ${BUILD_IMAGE_DIR}/
 
 cp -v ${BUILD}/firmware-*/boot/{bootcode.bin,fixup*.dat,start*.elf} ${BUILD_IMAGE_DIR}/
