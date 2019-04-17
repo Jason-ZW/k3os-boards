@@ -30,7 +30,6 @@ CROSS_COMPILE=aarch64-linux-gnu- make -j$(nproc)
 popd
 
 # construct the image
-mkdir -p ${BUILD_IMAGE_DIR}/boot
 mkimage -A arm64 -O linux -T script -d assets/rpi3/bootscript.txt ${BUILD_IMAGE_DIR}/boot.scr
 cp -v ${BUILD}/u-boot-*/u-boot.bin ${BUILD_IMAGE_DIR}/
 cp -v ${DOWNLOADS}/initrd ${BUILD_IMAGE_DIR}/
@@ -40,7 +39,7 @@ cp -v ${BUILD}/firmware-*/boot/{bootcode.bin,fixup*.dat,start*.elf} ${BUILD_IMAG
 cp -v ${BUILD}/firmware-*/boot/bcm*-rpi-3-b-plus.dtb ${BUILD_IMAGE_DIR}/
 cp -v ${BUILD}/firmware-*/boot/bcm*-rpi-3-b.dtb ${BUILD_IMAGE_DIR}/
 
-mkdir -p ${BUILD_IMAGE_DIR}/boot/overlays/
+mkdir -p ${BUILD_IMAGE_DIR}/overlays/
 cp -v ${BUILD}/firmware-*/boot/overlays/*.dtbo ${BUILD_IMAGE_DIR}/overlays/
 
 cp -v assets/rpi3/{cmdline.txt,config.txt} ${BUILD_IMAGE_DIR}/

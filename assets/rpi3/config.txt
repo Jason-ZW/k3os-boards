@@ -6,3 +6,7 @@ arm_control=0x200
 
 # Use U-Boot
 kernel=u-boot.bin
+
+device_tree_address=0x03000000
+dtparam=i2c_arm=on
+dtparam=spi=on

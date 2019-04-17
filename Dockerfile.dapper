@@ -30,10 +30,10 @@ ARG UBOOT_VERSION=2019.04
 ARG UBOOT_URL=http://ftp.denx.de/pub/u-boot/u-boot-${UBOOT_VERSION}.tar.bz2
 
 ARG INITRD_VERSION=latest
-ARG INITRD_URL=https://releases.rancher.com/k3os/${INITRD_VERSION}/arm64/initrd_arm64
+ARG INITRD_URL=https://releases.rancher.com/k3os/${INITRD_VERSION}/initrd_arm64
 
 ARG KERNEL_VERSION=latest
-ARG KERNEL_URL=https://releases.rancher.com/k3os/${INITRD_VERSION}/arm64/vmlinuz_arm64
+ARG KERNEL_URL=https://releases.rancher.com/k3os/${INITRD_VERSION}/vmlinuz_arm64
 
 ARG RPI_FIRMWARE_VERSION=1.20190401
 ARG RPI_FIRMWARE_URL=https://github.com/raspberrypi/firmware/archive/${RPI_FIRMWARE_VERSION}.tar.gz
