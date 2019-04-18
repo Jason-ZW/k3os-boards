@@ -16,6 +16,9 @@ RUN apt-get update && \
         git \
         module-init-tools \
         squashfs-tools \
+        parted \
+        dosfstools \
+        udev \
         cpio \
     && rm /bin/sh && ln -s /bin/bash /bin/sh
 
@@ -23,6 +26,7 @@ RUN apt-get update && \
 ENV DAPPER_SOURCE /source
 ENV DAPPER_OUTPUT ./dist
 ENV SHELL /bin/bash
+ENV DAPPER_RUN_ARGS --privileged
 WORKDIR ${DAPPER_SOURCE}
 
 ########## General Configuration #####################

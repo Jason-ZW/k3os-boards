@@ -84,3 +84,8 @@ cp -v ${BUILD}/u-boot-*/u-boot.bin ${BUILD_IMAGE_DIR}/
 cp -v assets/rpi3/{cmdline.txt,config.txt} ${BUILD_IMAGE_DIR}/
 
 tree ${BUILD_IMAGE_DIR} -a -L 3
+
+pushd ${BUILD_IMAGE_DIR}
+tar cJvf ${ARTIFACTS}/rpi3-${RELEASE_VERSION}.tar.xz .
+popd
+echo ${INITRD_HASHID} > ${ARTIFACTS}/.initrd_id

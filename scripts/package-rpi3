@@ -3,11 +3,39 @@
 cd $(dirname $0)/..
 
 ARTIFACTS=$(pwd)/dist/artifacts
-BUILD_IMAGE_DIR=build/image
 
-mkdir -p ${ARTIFACTS}
+mkdir -p tmp/RPI_BOOT tmp/RANCHER_STATE
+IMAGE_FILE=tmp/k3os-rpi3.img
 
-pushd ${BUILD_IMAGE_DIR}
-tar czvf ${ARTIFACTS}/rpi3-${RELEASE_VERSION}.tar.gz .
+dd if=/dev/zero of=${IMAGE_FILE} bs=1MiB count=4096
+
+LOOP_DEVICE=$(losetup -f)
+losetup ${LOOP_DEVICE} ${IMAGE_FILE}
+
+parted -s ${LOOP_DEVICE} mklabel msdos
+parted -s ${LOOP_DEVICE} mkpart primary fat32 0% 1024Mib
+parted -s ${LOOP_DEVICE} mkpart primary ext4 1024Mib 100%
+mkfs.vfat -n RPI_BOOT ${LOOP_DEVICE}p1
+mkfs.ext4 -L RANCHER_STATE ${LOOP_DEVICE}p2
+
+mount ${LOOP_DEVICE}p1 tmp/RPI_BOOT
+mount ${LOOP_DEVICE}p2 tmp/RANCHER_STATE
+
+pushd tmp/RPI_BOOT
+rm -rf lost+found
+tar -xf ${ARTIFACTS}/rpi3*tar* .
 popd
 
+pushd tmp/RANCHER_STATE
+rm -rf lost+found
+SQUASHFS_DIR=system-data/var/initrd/$(cat ${ARTIFACTS}/.initrd_id)
+mkdir -p ${SQUASHFS_DIR}
+cp ${ARTIFACTS}/*.squashfs ${SQUASHFS_DIR}
+popd
+
+umount tmp/RPI_BOOT  tmp/RANCHER_STATE
+losetup -d ${LOOP_DEVICE}
+
+xz ${IMAGE_FILE}
+mv ${IMAGE_FILE}.xz ${ARTIFACTS}/
+rm -rf tmp

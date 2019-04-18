@@ -4,4 +4,4 @@ set -e
 cd $(dirname $0)/..
 
 ./scripts/layout-rpi3
-./scripts/package-rpi3
+#./scripts/package-rpi3
