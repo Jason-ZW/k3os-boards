@@ -8,6 +8,6 @@ BUILD_IMAGE_DIR=build/image
 mkdir -p ${ARTIFACTS}
 
 pushd ${BUILD_IMAGE_DIR}
-tar czvf ${ARTIFACTS}/rpi3.tar.gz .
+tar czvf ${ARTIFACTS}/rpi3-${RELEASE_VERSION}.tar.gz .
 popd
 

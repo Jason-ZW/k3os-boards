@@ -1,54 +1,86 @@
 #!/bin/bash
 
+cd $(dirname $0)/..
+
+ARTIFACTS=$(pwd)/dist/artifacts
 BUILD=build
 BUILD_IMAGE_DIR=${BUILD}/image
 
 mkdir -p  ${BUILD_IMAGE_DIR} ${ARTIFACTS} ${DOWNLOADS}
 
-echo "Downloading u-boot"
-curl -fL ${UBOOT_URL} -o ${DOWNLOADS}/u-boot.tar.bz2
-tar -C ${BUILD} -xf ${DOWNLOADS}/u-boot.tar.bz2
-
-echo "Downloading initrd"
-curl -fL ${INITRD_URL} -o ${DOWNLOADS}/initrd
-
-echo "Downloading kernel vmlinuz"
-curl -fL ${KERNEL_URL} -o ${DOWNLOADS}/vmlinuz.gz
-pushd ${DOWNLOADS}
-gunzip vmlinuz.gz
-popd
-
-echo "Downloading RPi firmware"
-curl -fL ${RPI_FIRMWARE_URL} -o ${DOWNLOADS}/rpi_firmware.tar.gz
-tar -C ${BUILD} -xf ${DOWNLOADS}/rpi_firmware.tar.gz
-
-
-echo "Rebuilding initrd"
-mkdir -p  ${BUILD}/initrd
-pushd ${BUILD}/initrd
-zcat ${DOWNLOADS}/initrd | cpio -idm
-mv *.squashfs ../image/
-find | cpio -H newc -o | gzip -9 > ../image/initrd
-popd
+VMLINUZ_URL=http://us.ports.ubuntu.com/pool/universe/l/linux-raspi2/linux-image-5.0.0-1006-raspi2_5.0.0-1006.6_arm64.deb
+MODULES_URL=http://us.ports.ubuntu.com/pool/universe/l/linux-raspi2/linux-modules-5.0.0-1006-raspi2_5.0.0-1006.6_arm64.deb
+FIRMWARE_URL=http://ports.ubuntu.com/pool/multiverse/l/linux-firmware-raspi2/linux-firmware-raspi2_1.20190215-0ubuntu3_arm64.deb
+#DT_URL=http://ports.ubuntu.com/dists/disco/main/installer-arm64/current/images/device-tree
 
 # build u-boot
+curl -fL ${UBOOT_URL} -o ${DOWNLOADS}/u-boot.tar.bz2
+tar -C ${BUILD} -xf ${DOWNLOADS}/u-boot.tar.bz2
 pushd ${BUILD}/u-boot-*
 CROSS_COMPILE=aarch64-linux-gnu- make rpi_3_defconfig
 CROSS_COMPILE=aarch64-linux-gnu- make -j$(nproc)
 popd
 
+# initrd
+if [ -e ${DAPPER_SOURCE}/assets/initrd ]; then
+    cp ${DAPPER_SOURCE}/assets/initrd ${DOWNLOADS}/
+else
+    curl -fL ${INITRD_URL} -o ${DOWNLOADS}/initrd
+fi
+mkdir -p  ${BUILD}/initrd
+pushd ${BUILD}/initrd
+zcat ${DOWNLOADS}/initrd | cpio -idm
+rm *.squashfs
+export INITRD_HASHID=$(cat .id)
+find | cpio -H newc -o | gzip -9 > ../image/initrd
+popd
+
+# firmware
+mkdir ${BUILD}/linux-firmware
+curl -fL ${FIRMWARE_URL} -o ${DOWNLOADS}/linux-firmware.deb
+dpkg -x ${DOWNLOADS}/linux-firmware.deb ${BUILD}/linux-firmware
+## rpi wifi support
+BRCM_FM_BASE=https://raw.githubusercontent.com/RPi-Distro/firmware-nonfree/master/brcm
+FM_BASE=${BUILD}/linux-firmware/lib/firmware
+curl -sL -o ${FM_BASE}/brcm/brcmfmac43430-sdio.txt ${BRCM_FM_BASE}/brcmfmac43430-sdio.txt
+curl -sL -o ${FM_BASE}/brcm/brcmfmac43430-sdio.bin ${BRCM_FM_BASE}/brcmfmac43430-sdio.bin
+curl -sL -o ${FM_BASE}/brcm/brcmfmac43455-sdio.bin ${BRCM_FM_BASE}/brcmfmac43455-sdio.bin
+curl -sL -o ${FM_BASE}/brcm/brcmfmac43455-sdio.clm_blob ${BRCM_FM_BASE}/brcmfmac43455-sdio.clm_blob
+curl -sL -o ${FM_BASE}/brcm/brcmfmac43455-sdio.txt ${BRCM_FM_BASE}/brcmfmac43455-sdio.txt
+mksquashfs ${FM_BASE} ${ARTIFACTS}/firmware.squashfs
+cp -rvf ${BUILD}/linux-firmware/usr/lib/linux-firmware-raspi2/* ${BUILD_IMAGE_DIR}/
+
+# vmlinuz
+mkdir ${BUILD}/linux-image
+curl -fL ${VMLINUZ_URL} -o ${DOWNLOADS}/linux-image.deb
+dpkg -x ${DOWNLOADS}/linux-image.deb ${BUILD}/linux-image
+cp -v ${BUILD}/linux-image/boot/vmlinuz-*-raspi2 ${BUILD_IMAGE_DIR}/vmlinuz
+
+# modules
+mkdir ${BUILD}/linux-moduels
+curl -fL ${MODULES_URL} -o ${DOWNLOADS}/linux-modules.deb
+dpkg -x ${DOWNLOADS}/linux-modules.deb ${BUILD}/linux-moduels
+depmod -b ${BUILD}/linux-moduels $(basename ${BUILD}/linux-moduels/lib/modules/*)
+mksquashfs ${BUILD}/linux-moduels/lib/modules ${ARTIFACTS}/modules.squashfs
+cp -rvf ${BUILD}/linux-moduels/lib/firmware/*/device-tree/* ${BUILD_IMAGE_DIR}/
+## Important, but I don't why
+cp -rvf ${BUILD_IMAGE_DIR}/broadcom/* ${BUILD_IMAGE_DIR}/
+
+# rootfs
+mkdir build/rootfs
+if [ -e ${DAPPER_SOURCE}/assets/rootfs.tar.xz ]; then
+    cp ${DAPPER_SOURCE}/assets/rootfs.tar.xz ${DOWNLOADS}/
+else
+    curl -fL ${ROOTFS_URL} -o ${DOWNLOADS}/rootfs.tar.xz
+fi
+tar -xf ${DOWNLOADS}/rootfs.tar.xz -C build/rootfs
+cp -rvf ${BUILD}/linux-moduels/lib/modprobe.d/* build/rootfs/lib/modprobe.d
+mksquashfs build/rootfs ${ARTIFACTS}/rootfs.squashfs
+export RELEASE_VERSION=$(build/rootfs/bin/k3os --version)
+
 # construct the image
 mkimage -A arm64 -O linux -T script -d assets/rpi3/bootscript.txt ${BUILD_IMAGE_DIR}/boot.scr
 cp -v ${BUILD}/u-boot-*/u-boot.bin ${BUILD_IMAGE_DIR}/
-cp -v ${DOWNLOADS}/vmlinuz ${BUILD_IMAGE_DIR}/
-
-cp -v ${BUILD}/firmware-*/boot/{bootcode.bin,fixup*.dat,start*.elf} ${BUILD_IMAGE_DIR}/
-cp -v ${BUILD}/firmware-*/boot/bcm*-rpi-3-b-plus.dtb ${BUILD_IMAGE_DIR}/
-cp -v ${BUILD}/firmware-*/boot/bcm*-rpi-3-b.dtb ${BUILD_IMAGE_DIR}/
-
-mkdir -p ${BUILD_IMAGE_DIR}/overlays/
-cp -v ${BUILD}/firmware-*/boot/overlays/*.dtbo ${BUILD_IMAGE_DIR}/overlays/
-
 cp -v assets/rpi3/{cmdline.txt,config.txt} ${BUILD_IMAGE_DIR}/
 
 tree ${BUILD_IMAGE_DIR} -a -L 3
