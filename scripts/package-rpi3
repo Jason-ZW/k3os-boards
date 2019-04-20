@@ -4,7 +4,7 @@ cd $(dirname $0)/..
 
 ARTIFACTS=$(pwd)/dist/artifacts
 
-mkdir -p tmp/RPI_BOOT tmp/RANCHER_STATE
+mkdir -p tmp/SYSTEM_BOOT tmp/RANCHER_STATE
 IMAGE_FILE=tmp/k3os-rpi3.img
 
 dd if=/dev/zero of=${IMAGE_FILE} bs=1MiB count=4096
@@ -15,13 +15,13 @@ losetup ${LOOP_DEVICE} ${IMAGE_FILE}
 parted -s ${LOOP_DEVICE} mklabel msdos
 parted -s ${LOOP_DEVICE} mkpart primary fat32 0% 1024Mib
 parted -s ${LOOP_DEVICE} mkpart primary ext4 1024Mib 100%
-mkfs.vfat -n RPI_BOOT ${LOOP_DEVICE}p1
+mkfs.vfat -n SYSTEM_BOOT ${LOOP_DEVICE}p1
 mkfs.ext4 -L RANCHER_STATE ${LOOP_DEVICE}p2
 
-mount ${LOOP_DEVICE}p1 tmp/RPI_BOOT
+mount ${LOOP_DEVICE}p1 tmp/SYSTEM_BOOT
 mount ${LOOP_DEVICE}p2 tmp/RANCHER_STATE
 
-pushd tmp/RPI_BOOT
+pushd tmp/SYSTEM_BOOT
 rm -rf lost+found
 tar -xf ${ARTIFACTS}/rpi3*tar* .
 popd
@@ -33,7 +33,7 @@ mkdir -p ${SQUASHFS_DIR}
 cp ${ARTIFACTS}/*.squashfs ${SQUASHFS_DIR}
 popd
 
-umount tmp/RPI_BOOT  tmp/RANCHER_STATE
+umount tmp/SYSTEM_BOOT  tmp/RANCHER_STATE
 losetup -d ${LOOP_DEVICE}
 
 xz ${IMAGE_FILE}
