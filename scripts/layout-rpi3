@@ -87,5 +87,7 @@ tree ${BUILD_IMAGE_DIR} -a -L 3
 
 pushd ${BUILD_IMAGE_DIR}
 tar cJvf ${ARTIFACTS}/rpi3-${RELEASE_VERSION}.tar.xz .
+cp initrd ${ARTIFACTS}/
+cp vmlinuz ${ARTIFACTS}/
 popd
 echo ${INITRD_HASHID} > ${ARTIFACTS}/.initrd_id
